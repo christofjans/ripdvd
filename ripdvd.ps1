@@ -6,23 +6,22 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace Ripping
+namespace Ripper
 {
-    public static class RipDvd
+    public static class DvdRipper
     {
-        public static void Rip(string driveLetter, string isoFilePath, Action<int> callback)
+        const int DEFAULT_BUFFER_SIZE = 0x20000;
+        
+        public static void RipDvd(string driveLetter, string isoFilePath, Action<int> callback)
         {
             if (!driveLetter.EndsWith(":")) driveLetter += ":";
-            SafeFileHandle hDvd = CreateFileDevice(driveLetter);
-            try
-            {
-                const int DEFAULT_BUFFER_SIZE = 0x20000;
 
+            using (SafeFileHandle hDvd = CreateFileDevice(driveLetter))
+            using (Stream input = new FileStream(hDvd, FileAccess.Read))
+            using (Stream output = new System.IO.FileStream(isoFilePath, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+            {
                 long totalSize = new DriveInfo(driveLetter).TotalSize;
                 long totalWritten = 0;
-
-                Stream input = new FileStream(hDvd, FileAccess.Read);
-                Stream output = new System.IO.FileStream(isoFilePath, System.IO.FileMode.Create, System.IO.FileAccess.Write);
                 CopyStream(input, output, DEFAULT_BUFFER_SIZE, (int bytesWritten)=>
                 {
                     totalWritten += bytesWritten;
@@ -34,17 +33,6 @@ namespace Ripping
                         callback(percent);
                     }
                 });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.GetType());
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
-            }
-            finally
-            {
-                hDvd.Close();
-                hDvd.Dispose();
             }
         }
 
@@ -74,7 +62,6 @@ namespace Ripping
             return new SafeFileHandle(hdev, true);
         }
 
-
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern IntPtr CreateFile(string lpFileName, uint dwDesiredAccess,uint dwShareMode, IntPtr lpSecurityAttributes, uint dwCreationDisposition, uint wFlagsAndAttributes, IntPtr hTemplateFile);
     }
@@ -87,4 +74,4 @@ function progress($i) {
     Write-Progress -Activity "Ripping ..." -status "$driveLetter -> $isoFilePath" -PercentComplete $i
 }
 
-[Ripping.RipDvd]::Rip($driveLetter, $isoFilePath, $function:progress)
+[Ripper.DvdRipper]::RipDvd($driveLetter, $isoFilePath, $function:progress)
