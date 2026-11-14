@@ -1,5 +1,8 @@
 This is a small Windows Powershell utility to rip CD/DVD-ROMs . It works on Windows Powershell but I don't think it would work on Powershell 7 .
 
+It's based on [this codeplex archive](https://archive.codeplex.com/?p=gomuiso9660).
+
+
 Example usage:
 
 ```ps
